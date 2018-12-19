@@ -1,0 +1,4 @@
+[submodule "m-epics-scanning"]
+	path = m-epics-scanning
+	url = https://bitbucket.org/europeanspallationsource/m-epics-scanning
+	ignore = all
