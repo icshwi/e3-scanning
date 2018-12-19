@@ -35,23 +35,26 @@ include $(E3_REQUIRE_CONFIG)/DECOUPLE_FLAGS
 # one should look at other modules makefile to add more
 # In most case, one should ignore the following lines:
 
-#ifneq ($(strip $(ASYN_DEP_VERSION)),)
-#asyn_VERSION=$(ASYN_DEP_VERSION)
-#endif
+ifneq ($(strip $(BUSY_DEP_VERSION)),)
+asyn_VERSION=$(BUSY_DEP_VERSION)
+endif
 
-#ifneq ($(strip $(SEQUENCER_DEP_VERSION)),)
-#sequencer_VERSION=$(SEQUENCER_DEP_VERSION)
-#endif
+ifneq ($(strip $(CALC_DEP_VERSION)),)
+sequencer_VERSION=$(CALC_DEP_VERSION)
+endif
 
+ifneq ($(strip $(SSCAN_DEP_VERSION)),)
+sequencer_VERSION=$(SSCAN_DEP_VERSION)
+endif
 
 
 ## Exclude linux-ppc64e6500
 ##EXCLUDE_ARCHS = linux-ppc64e6500
 
 
-# APP:=calcApp
-# APPDB:=$(APP)/Db
-# APPSRC:=$(APP)/src
+APP:=src/main/epics/scanningApp
+APPDB:=$(APP)/Db
+APPSRC:=$(APP)/src
 
 
 # USR_INCLUDES += -I$(where_am_I)$(APPSRC)
@@ -63,10 +66,24 @@ include $(E3_REQUIRE_CONFIG)/DECOUPLE_FLAGS
 # USR_CPPFLAGS += -Wno-unused-function
 # USR_CPPFLAGS += -Wno-unused-but-set-variable
 
-# TEMPLATES += $(wildcard $(APPDB)/*.db)
+TEMPLATES += $(APPDB)/scanBase.db
+TEMPLATES += $(APPDB)/scanDAQDetWithAverage.db
+
+TEMPLATES += $(APPDB)/scanBase.substitutions
+TEMPLATES += $(APPDB)/scanDAQDetWithAverage.substitutions
+
+
 # TEMPLATES += $(wildcard $(APPDB)/*.db)
 # TEMPLATES += $(wildcard $(APPDB)/*.proto)
-# TEMPLATES += $(wildcard $(APPDB)/*.template)
+
+TEMPLATES += $(APPDB)/sscan.template
+TEMPLATES += $(APPDB)/scanTRDetTrig.template
+TEMPLATES += $(APPDB)/scanTSArray.template
+TEMPLATES += $(APPDB)/scanGeneric.template
+TEMPLATES += $(APPDB)/scanDAQDetTrig.template
+TEMPLATES += $(APPDB)/scanDAQDetAverage.template
+TEMPLATES += $(APPDB)/scanDAQDet.template
+TEMPLATES += $(APPDB)/scanArrTrig.template
 
 
 # DBDINC_SRCS += $(APPSRC)/swaitRecord.c
@@ -85,7 +102,7 @@ include $(E3_REQUIRE_CONFIG)/DECOUPLE_FLAGS
 # HEADERS += $(DBDINC_HDRS)
 
 
-# SOURCES += $(APPSRC)/sCalcPostfix.c
+SOURCES += $(APPSRC)/concatTSArray.c
 # SOURCES += $(APPSRC)/sCalcPerform.c
 # SOURCES += $(APPSRC)/aCalcPostfix.c
 # SOURCES += $(APPSRC)/aCalcPerform.c
@@ -103,7 +120,7 @@ include $(E3_REQUIRE_CONFIG)/DECOUPLE_FLAGS
 # # DBDINC_SRCS should be last of the series of SOURCES
 # SOURCES += $(DBDINC_SRCS)
 
-# DBDS += $(APPSRC)/calcSupport_LOCAL.dbd
+DBDS += $(APPSRC)/scanning.dbd
 # DBDS += $(APPSRC)/calcSupport_withSNCSEQ.dbd
 # DBDS += $(APPSRC)/calcSupport_withSSCAN.dbd
 
@@ -182,34 +199,41 @@ SCRIPTS += $(wildcard ../iocsh/*.iocsh)
 ## db rule is the default in RULES_DB, so add the empty one
 ## Please look at e3-mrfioc2 for example.
 
-db: 
+# db: 
 
-.PHONY: db 
+# .PHONY: db 
 
-#
-# USR_DBFLAGS += -I . -I ..
-# USR_DBFLAGS += -I $(EPICS_BASE)/db
-# USR_DBFLAGS += -I $(APPDB)
-#
-# SUBS=$(wildcard $(APPDB)/*.substitutions)
-# TMPS=$(wildcard $(APPDB)/*.template)
-#
-# db: $(SUBS) $(TMPS)
 
-# $(SUBS):
-#	@printf "Inflating database ... %44s >>> %40s \n" "$@" "$(basename $(@)).db"
-#	@rm -f  $(basename $(@)).db.d  $(basename $(@)).db
-#	@$(MSI) -D $(USR_DBFLAGS) -o $(basename $(@)).db -S $@  > $(basename $(@)).db.d
-#	@$(MSI)    $(USR_DBFLAGS) -o $(basename $(@)).db -S $@
+USR_DBFLAGS += -I . -I ..
+USR_DBFLAGS += -I $(EPICS_BASE)/db
+USR_DBFLAGS += -I $(APPDB)
 
-# $(TMPS):
-#	@printf "Inflating database ... %44s >>> %40s \n" "$@" "$(basename $(@)).db"
-#	@rm -f  $(basename $(@)).db.d  $(basename $(@)).db
-#	@$(MSI) -D $(USR_DBFLAGS) -o $(basename $(@)).db $@  > $(basename $(@)).db.d
-#	@$(MSI)    $(USR_DBFLAGS) -o $(basename $(@)).db $@
+SUBS=$(wildcard $(APPDB)/*.substitutions)
+TMPS=$(wildcard $(APPDB)/*.template)
 
-#
-# .PHONY: db $(SUBS) $(TMPS)
+#SUBS += $(APPDB)/scanBase.substitutions
+#SUBS += $(APPDB)/scanDAQDetWithAverage.substitutions
+
+#TMPS += $(APPDB)/scanBase.template
+#TMPS += $(APPDB)/scanDAQDetWithAverage.template
+
+
+db: $(SUBS) $(TMPS)
+
+$(SUBS):
+	@printf "Inflating database ... %44s >>> %40s \n" "$@" "$(basename $(@)).db"
+	@rm -f  $(basename $(@)).db.d  $(basename $(@)).db
+	@$(MSI) -D $(USR_DBFLAGS) -o $(basename $(@)).db -S $@  > $(basename $(@)).db.d
+	@$(MSI)    $(USR_DBFLAGS) -o $(basename $(@)).db -S $@
+
+$(TMPS):
+	@printf "Inflating database ... %44s >>> %40s \n" "$@" "$(basename $(@)).db"
+	@rm -f  $(basename $(@)).db.d  $(basename $(@)).db
+	@$(MSI) -D $(USR_DBFLAGS) -o $(basename $(@)).db $@  > $(basename $(@)).db.d
+	@$(MSI)    $(USR_DBFLAGS) -o $(basename $(@)).db $@
+
+
+.PHONY: db $(SUBS) $(TMPS)
 
 vlibs:
 
